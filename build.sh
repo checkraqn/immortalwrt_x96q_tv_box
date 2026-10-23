@@ -56,4 +56,4 @@ rm -f target/linux/sunxi/patches-6.12/910-arm64-dts-allwinner-h5-add-more-cpu-op
 cp $CUR_DIR/patches/kernel/* target/linux/sunxi/patches-6.12/
 cp $CUR_DIR/patches/u-boot/* package/boot/uboot-sunxi/patches/
 
-make -j$(nproc)
+make -j1 V=s
