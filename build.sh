@@ -36,8 +36,6 @@ rm -rf tmp/.config-package.in
 
 # ВАЖНО: Используем конфиг из репозитория (там уже прописан профиль X96Q)
 cp $CUR_DIR/configs/immortal_h313.config ./.config
-# Если нужно добавить пакеты, можно раскомментировать строку ниже:
-# cat "$CUR_DIR/configs/my_packages.txt" >> .config
 
 make defconfig
 
@@ -48,7 +46,8 @@ echo "CONFIG_SUNXI_ADDR_MGT=y" >> target/linux/sunxi/config-6.12
 # ВАЖНО: Удаляем падающую плату a64-olinuxino из U-Boot
 sed -i '/a64-olinuxino/d' package/boot/uboot-sunxi/Makefile
 
-# КРИТИЧНО ВАЖНО: Переименовываем наш DTS в то имя, которое ожидает скрипт упаковки
+# КРИТИЧНО ВАЖНО: Создаем папку dts (если ее нет) и копируем туда файл
+mkdir -p target/linux/sunxi/dts/
 cp $CUR_DIR/configs/sun50i-h313-x96q-ddr3-v5.1.dts target/linux/sunxi/dts/sun50i-h313-x96q.dts
 # Добавляем в Makefile для сборки именно этого имени
 echo 'dtb-$(CONFIG_ARCH_SUNXI) += sun50i-h313-x96q.dtb' >> target/linux/sunxi/dts/Makefile
