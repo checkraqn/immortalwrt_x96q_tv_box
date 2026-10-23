@@ -64,4 +64,4 @@ cp $CUR_DIR/patches/u-boot/* package/boot/uboot-sunxi/patches/
 
 # Запускаем сборку (пока оставляем -j1 V=s, чтобы точно увидеть, если что-то пойдет не так. 
 # Но если хочешь быстрее, можешь потом поменять на make -j$(nproc))
-make -j1 V=s
+make -j$(nproc)
