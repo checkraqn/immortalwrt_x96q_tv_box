@@ -27,6 +27,13 @@ git checkout $TARGET_COMMIT
 ./scripts/feeds install odhcpd-ipv6only
 ./scripts/feeds install dropbear
 
+# Костыли от зацикливания пакетов
+rm -rf package/feeds/*/luci-app-qbittorrent
+rm -rf package/feeds/*/qbittorrent*
+rm -rf package/feeds/*/luci-app-weechat
+rm -rf package/feeds/*/weechat*
+rm -rf tmp/.config-package.in
+
 # Создаем минимальный конфиг с нуля
 echo "CONFIG_TARGET_sunxi=y" > .config
 echo "CONFIG_TARGET_sunxi_cortexa53=y" >> .config
@@ -40,6 +47,9 @@ echo "CONFIG_PACKAGE_luci=y" >> .config
 echo "CONFIG_PACKAGE_luci-theme-bootstrap=y" >> .config
 echo "CONFIG_PACKAGE_luci-app-firewall=y" >> .config
 
+# ФИКС ОШИБКИ ЯДРА 6.12 (SUNXI_ADDR_MGT)
+echo "CONFIG_SUNXI_ADDR_MGT=y" >> .config
+
 # Копируем наш DTS
 mkdir -p target/linux/sunxi/dts/
 cp $CUR_DIR/configs/sun50i-h313-x96q-ddr3-v5.1.dts target/linux/sunxi/dts/sun50i-h313-x96q-ddr3-v5.1.dts
@@ -48,12 +58,10 @@ echo 'dtb-$(CONFIG_ARCH_SUNXI) += sun50i-h313-x96q-ddr3-v5.1.dtb' >> target/linu
 make defconfig
 
 # Применяем наши патчи (ядро и U-Boot)
-rm -rf package/feeds/*/luci-app-qbittorrent
-rm -rf package/feeds/*/qbittorrent*
-rm -rf package/feeds/*/luci-app-weechat
-rm -rf package/feeds/*/weechat*
 rm -f target/linux/sunxi/patches-6.12/910-arm64-dts-allwinner-h5-add-more-cpu-operating-points-.patch
 cp $CUR_DIR/patches/kernel/* target/linux/sunxi/patches-6.12/
 cp $CUR_DIR/patches/u-boot/* package/boot/uboot-sunxi/patches/
 
+# Запускаем сборку (пока оставляем -j1 V=s, чтобы точно увидеть, если что-то пойдет не так. 
+# Но если хочешь быстрее, можешь потом поменять на make -j$(nproc))
 make -j1 V=s
