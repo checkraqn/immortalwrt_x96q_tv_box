@@ -20,33 +20,40 @@ git fetch origin
 git checkout $TARGET_COMMIT
 
 ./scripts/feeds update -a
-./scripts/feeds install -a
+./scripts/feeds install luci
+./scripts/feeds install base-files
+./scripts/feeds install dnsmasq
+./scripts/feeds install firewall4
+./scripts/feeds install odhcpd-ipv6only
+./scripts/feeds install dropbear
 
-# Костыли от зацикливания пакетов (qbittorrent и weechat)
-rm -rf package/feeds/*/luci-app-qbittorrent
-rm -rf package/feeds/*/qbittorrent*
-rm -rf package/feeds/*/luci-app-weechat
-rm -rf package/feeds/*/weechat*
-rm -rf tmp/.config-package.in
+# Создаем минимальный конфиг с нуля
+echo "CONFIG_TARGET_sunxi=y" > .config
+echo "CONFIG_TARGET_sunxi_cortexa53=y" >> .config
+echo "CONFIG_TARGET_sunxi_cortexa53_Generic=y" >> .config
+echo "CONFIG_TARGET_PROFILE=\"Generic\"" >> .config
+echo "CONFIG_TARGET_ROOTFS_EXT4FS=y" >> .config
+echo "CONFIG_TARGET_IMAGES_EXT4_SDCARD=y" >> .config
 
-for patch in $CUR_DIR/patches/Makefile/*.patch; do
-    [ -f "$patch" ] && git apply "$patch" || true
-done
+# Добавляем LuCI
+echo "CONFIG_PACKAGE_luci=y" >> .config
+echo "CONFIG_PACKAGE_luci-theme-bootstrap=y" >> .config
+echo "CONFIG_PACKAGE_luci-app-firewall=y" >> .config
 
-cp $CUR_DIR/configs/immortal_h313.config ./.config
-cat "$CUR_DIR/configs/my_packages.txt" >> .config
-
-# ВАЖНО: Создаем папки принудительно перед копированием!
+# Копируем наш DTS
 mkdir -p target/linux/sunxi/dts/
-mkdir -p package/boot/uboot-sunxi/patches/
-
-# Копируем наш DTS и прописываем в Makefile
 cp $CUR_DIR/configs/sun50i-h313-x96q-ddr3-v5.1.dts target/linux/sunxi/dts/sun50i-h313-x96q-ddr3-v5.1.dts
 echo 'dtb-$(CONFIG_ARCH_SUNXI) += sun50i-h313-x96q-ddr3-v5.1.dtb' >> target/linux/sunxi/dts/Makefile
 
 make defconfig
-cp $CUR_DIR/configs/kernel_h313_6.12.config target/linux/sunxi/config-6.12
+
+# Применяем наши патчи (ядро и U-Boot)
+rm -rf package/feeds/*/luci-app-qbittorrent
+rm -rf package/feeds/*/qbittorrent*
+rm -rf package/feeds/*/luci-app-weechat
+rm -rf package/feeds/*/weechat*
 rm -f target/linux/sunxi/patches-6.12/910-arm64-dts-allwinner-h5-add-more-cpu-operating-points-.patch
 cp $CUR_DIR/patches/kernel/* target/linux/sunxi/patches-6.12/
 cp $CUR_DIR/patches/u-boot/* package/boot/uboot-sunxi/patches/
+
 make -j$(nproc)
