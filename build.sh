@@ -34,34 +34,26 @@ rm -rf package/feeds/*/luci-app-weechat
 rm -rf package/feeds/*/weechat*
 rm -rf tmp/.config-package.in
 
-# Создаем минимальный конфиг OpenWrt
-echo "CONFIG_TARGET_sunxi=y" > .config
-echo "CONFIG_TARGET_sunxi_cortexa53=y" >> .config
-echo "CONFIG_TARGET_sunxi_cortexa53_Generic=y" >> .config
-echo "CONFIG_TARGET_PROFILE=\"Generic\"" >> .config
-echo "CONFIG_TARGET_ROOTFS_EXT4FS=y" >> .config
-echo "CONFIG_TARGET_IMAGES_EXT4_SDCARD=y" >> .config
-
-# Добавляем LuCI
-echo "CONFIG_PACKAGE_luci=y" >> .config
-echo "CONFIG_PACKAGE_luci-theme-bootstrap=y" >> .config
-echo "CONFIG_PACKAGE_luci-app-firewall=y" >> .config
-
-# Копируем наш DTS
-mkdir -p target/linux/sunxi/dts/
-cp $CUR_DIR/configs/sun50i-h313-x96q-ddr3-v5.1.dts target/linux/sunxi/dts/sun50i-h313-x96q-ddr3-v5.1.dts
-echo 'dtb-$(CONFIG_ARCH_SUNXI) += sun50i-h313-x96q-ddr3-v5.1.dtb' >> target/linux/sunxi/dts/Makefile
+# ВАЖНО: Используем конфиг из репозитория (там уже прописан профиль X96Q)
+cp $CUR_DIR/configs/immortal_h313.config ./.config
+# Если нужно добавить пакеты, можно раскомментировать строку ниже:
+# cat "$CUR_DIR/configs/my_packages.txt" >> .config
 
 make defconfig
 
-# ВАЖНО: Копируем конфиг ядра и добавляем туда фикс для 6.12!
+# ВАЖНО: Исправляем конфиг ядра под 6.12 (добавляем SUNXI_ADDR_MGT)
 cp $CUR_DIR/configs/kernel_h313_6.12.config target/linux/sunxi/config-6.12
 echo "CONFIG_SUNXI_ADDR_MGT=y" >> target/linux/sunxi/config-6.12
 
-# УДАЛЯЕМ НЕНУЖНУЮ ПЛАТУ A64-OLINUXINO, ИЗ-ЗА КОТОРОЙ ПАДАЕТ СБОРКА
+# ВАЖНО: Удаляем падающую плату a64-olinuxino из U-Boot
 sed -i '/a64-olinuxino/d' package/boot/uboot-sunxi/Makefile
 
-# Применяем наши патчи (ядро и U-Boot)
+# КРИТИЧНО ВАЖНО: Переименовываем наш DTS в то имя, которое ожидает скрипт упаковки
+cp $CUR_DIR/configs/sun50i-h313-x96q-ddr3-v5.1.dts target/linux/sunxi/dts/sun50i-h313-x96q.dts
+# Добавляем в Makefile для сборки именно этого имени
+echo 'dtb-$(CONFIG_ARCH_SUNXI) += sun50i-h313-x96q.dtb' >> target/linux/sunxi/dts/Makefile
+
+# Применяем патчи
 rm -f target/linux/sunxi/patches-6.12/910-arm64-dts-allwinner-h5-add-more-cpu-operating-points-.patch
 cp $CUR_DIR/patches/kernel/* target/linux/sunxi/patches-6.12/
 cp $CUR_DIR/patches/u-boot/* package/boot/uboot-sunxi/patches/
