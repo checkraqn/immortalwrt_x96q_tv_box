@@ -34,7 +34,7 @@ rm -rf package/feeds/*/luci-app-weechat
 rm -rf package/feeds/*/weechat*
 rm -rf tmp/.config-package.in
 
-# Создаем минимальный конфиг с нуля
+# Создаем минимальный конфиг OpenWrt
 echo "CONFIG_TARGET_sunxi=y" > .config
 echo "CONFIG_TARGET_sunxi_cortexa53=y" >> .config
 echo "CONFIG_TARGET_sunxi_cortexa53_Generic=y" >> .config
@@ -47,9 +47,6 @@ echo "CONFIG_PACKAGE_luci=y" >> .config
 echo "CONFIG_PACKAGE_luci-theme-bootstrap=y" >> .config
 echo "CONFIG_PACKAGE_luci-app-firewall=y" >> .config
 
-# ФИКС ОШИБКИ ЯДРА 6.12 (SUNXI_ADDR_MGT)
-echo "CONFIG_SUNXI_ADDR_MGT=y" >> .config
-
 # Копируем наш DTS
 mkdir -p target/linux/sunxi/dts/
 cp $CUR_DIR/configs/sun50i-h313-x96q-ddr3-v5.1.dts target/linux/sunxi/dts/sun50i-h313-x96q-ddr3-v5.1.dts
@@ -57,11 +54,14 @@ echo 'dtb-$(CONFIG_ARCH_SUNXI) += sun50i-h313-x96q-ddr3-v5.1.dtb' >> target/linu
 
 make defconfig
 
+# ВАЖНО: Копируем конфиг ядра и добавляем туда фикс для 6.12!
+cp $CUR_DIR/configs/kernel_h313_6.12.config target/linux/sunxi/config-6.12
+echo "CONFIG_SUNXI_ADDR_MGT=y" >> target/linux/sunxi/config-6.12
+
 # Применяем наши патчи (ядро и U-Boot)
 rm -f target/linux/sunxi/patches-6.12/910-arm64-dts-allwinner-h5-add-more-cpu-operating-points-.patch
 cp $CUR_DIR/patches/kernel/* target/linux/sunxi/patches-6.12/
 cp $CUR_DIR/patches/u-boot/* package/boot/uboot-sunxi/patches/
 
-# Запускаем сборку (пока оставляем -j1 V=s, чтобы точно увидеть, если что-то пойдет не так. 
-# Но если хочешь быстрее, можешь потом поменять на make -j$(nproc))
+# Запускаем сборку. Возвращаем многопоточность для скорости!
 make -j$(nproc)
