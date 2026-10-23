@@ -58,10 +58,13 @@ make defconfig
 cp $CUR_DIR/configs/kernel_h313_6.12.config target/linux/sunxi/config-6.12
 echo "CONFIG_SUNXI_ADDR_MGT=y" >> target/linux/sunxi/config-6.12
 
+# УДАЛЯЕМ НЕНУЖНУЮ ПЛАТУ A64-OLINUXINO, ИЗ-ЗА КОТОРОЙ ПАДАЕТ СБОРКА
+sed -i '/a64-olinuxino/d' package/boot/uboot-sunxi/Makefile
+
 # Применяем наши патчи (ядро и U-Boot)
 rm -f target/linux/sunxi/patches-6.12/910-arm64-dts-allwinner-h5-add-more-cpu-operating-points-.patch
 cp $CUR_DIR/patches/kernel/* target/linux/sunxi/patches-6.12/
 cp $CUR_DIR/patches/u-boot/* package/boot/uboot-sunxi/patches/
 
-# Запускаем сборку. Возвращаем многопоточность для скорости!
+# Запускаем сборку
 make -j$(nproc)
