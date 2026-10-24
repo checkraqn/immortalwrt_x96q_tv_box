@@ -19,6 +19,10 @@ cd "$BUILD_DIR"
 git fetch origin
 git checkout $TARGET_COMMIT
 
+# --- ЖЕСТКАЯ ОЧИСТКА ОТ МУСОРА (как советуют на форумах) ---
+make distclean || true
+rm -rf tmp/.config-package.in
+
 ./scripts/feeds update -a
 ./scripts/feeds install luci
 ./scripts/feeds install base-files
@@ -32,9 +36,8 @@ rm -rf package/feeds/*/luci-app-qbittorrent
 rm -rf package/feeds/*/qbittorrent*
 rm -rf package/feeds/*/luci-app-weechat
 rm -rf package/feeds/*/weechat*
-rm -rf tmp/.config-package.in
 
-# 1. ВАЖНО: Применяем патчи Makefile
+# 1. Применяем патчи Makefile
 for patch in $CUR_DIR/patches/Makefile/*.patch; do
     [ -f "$patch" ] && git apply "$patch" || true
 done
@@ -42,8 +45,13 @@ done
 # 2. Используем конфиг из репозитория
 cp $CUR_DIR/configs/immortal_h313.config ./.config
 
-# 3. ВАЖНО: Отключаем сборку SD-образа, чтобы обойти ошибку упаковки
-sed -i 's/CONFIG_TARGET_IMAGES_EXT4_SDCARD=y/# CONFIG_TARGET_IMAGES_EXT4_SDCARD is not set/' .config
+# 3. ГЛАВНЫЙ ФИКС: Принудительно отключаем ВСЕ образы
+cat >> .config << 'EOF'
+# CONFIG_TARGET_IMAGES_EXT4_SDCARD is not set
+# CONFIG_TARGET_ROOTFS_EXT4FS is not set
+# CONFIG_TARGET_ROOTFS_SQUASHFS is not set
+# CONFIG_TARGET_ROOTFS_TARGZ is not set
+EOF
 
 make defconfig
 
@@ -64,5 +72,10 @@ rm -f target/linux/sunxi/patches-6.12/910-arm64-dts-allwinner-h5-add-more-cpu-op
 cp $CUR_DIR/patches/kernel/* target/linux/sunxi/patches-6.12/
 cp $CUR_DIR/patches/u-boot/* package/boot/uboot-sunxi/patches/
 
-# 8. Сборка
+# 8. Сборка с очисткой перед сборкой конкретно target/linux
+make target/linux/clean || true
 make -j$(nproc)
+
+# 9. Выводим все файлы, которые есть в bin
+echo "========== ВОТ ЧТО ЕСТЬ В BIN: =========="
+find bin/ -type f 2>/dev/null | head -50
