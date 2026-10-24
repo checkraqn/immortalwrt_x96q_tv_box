@@ -79,3 +79,7 @@ make -j$(nproc)
 # 9. Вывод файлов
 echo "========== ВОТ ЧТО ЕСТЬ В BIN: =========="
 find bin/ -type f 2>/dev/null | head -50
+
+# Если сборка упала, мы все равно пытаемся найти файлы
+set +e 
+find bin/ -type f 2>/dev/null | head -50
