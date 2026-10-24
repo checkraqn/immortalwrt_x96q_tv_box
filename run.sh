@@ -45,13 +45,10 @@ done
 # 2. Используем конфиг из репозитория
 cp $CUR_DIR/configs/immortal_h313.config ./.config
 
-# 3. ГЛАВНЫЙ ФИКС: Отключаем образы
-cat >> .config << 'EOF'
-# CONFIG_TARGET_IMAGES_EXT4_SDCARD is not set
-# CONFIG_TARGET_ROOTFS_EXT4FS is not set
-# CONFIG_TARGET_ROOTFS_SQUASHFS is not set
-# CONFIG_TARGET_ROOTFS_TARGZ is not set
-EOF
+# 3. ГЛАВНЫЙ ФИКС: Включаем сборку образов и указываем профиль X96Q
+echo "CONFIG_TARGET_sunxi_cortexa53_DEVICE_x96q=y" >> .config
+echo "CONFIG_TARGET_sunxi_cortexa53_Generic=y" >> .config
+echo "CONFIG_TARGET_PROFILE=\"x96q\"" >> .config
 
 make defconfig
 
